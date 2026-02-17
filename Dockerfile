@@ -6,17 +6,20 @@ RUN apt-get update && apt-get install -y \
     openssh-server \
     python3 \
     python3-pip \
-    curl wget git nano vim screen bash \
+    curl wget git nano vim screen bash unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install flask
 
-# Setup SSH on port 2222
+# Install ngrok
+RUN curl -Lo /tmp/ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip \
+    && unzip /tmp/ngrok.zip -d /usr/local/bin \
+    && rm /tmp/ngrok.zip
+
+# Setup SSH
 RUN mkdir -p /var/run/sshd
 RUN echo 'root:yourpassword123' | chpasswd
 RUN chsh -s /bin/bash root
-
-RUN echo "Port 2222" >> /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
@@ -28,14 +31,38 @@ RUN printf 'from flask import Flask\napp = Flask(__name__)\n\n@app.route("/")\nd
 
 RUN printf '#!/bin/bash\n\
 service ssh start\n\
+\n\
+# Start ngrok tunnel\n\
+ngrok config add-authtoken $NGROK_TOKEN\n\
+ngrok tcp 22 --log=stdout &\n\
+sleep 5\n\
+\n\
+# Get ngrok address\n\
+TUNNEL=$(curl -s http://localhost:4040/api/tunnels | python3 -c "import sys,json; t=json.load(sys.stdin)[\"tunnels\"][0][\"public_url\"]; print(t.replace(\"tcp://\",\"\"))")\n\
+\n\
 echo "=== SERVER READY ==="\n\
-echo "Connect: ssh root@your-app.onrender.com -p 2222"\n\
+echo "Connect: ssh root@$TUNNEL"\n\
 echo "Password: yourpassword123"\n\
 echo "===================="\n\
+\n\
 python3 /keepalive.py\n' > /start.sh
 
 RUN chmod +x /start.sh
 
-EXPOSE 2222 8080
+EXPOSE 8080
 
 CMD ["/start.sh"]
+```
+
+**Steps:**
+1. Replace your current `Dockerfile` in GitHub with this
+2. Go to Render → your service → **Environment** tab → add:
+```
+NGROK_TOKEN = your_new_token_here
+```
+3. Hit **Save** — it will auto redeploy
+4. Watch the logs for:
+```
+=== SERVER READY ===
+Connect: ssh root@0.tcp.ngrok.io:XXXXX
+Password: yourpassword123
