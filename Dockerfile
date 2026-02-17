@@ -11,10 +11,9 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 install flask
 
-# Install ngrok
-RUN curl -Lo /tmp/ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip \
-    && unzip /tmp/ngrok.zip -d /usr/local/bin \
-    && rm /tmp/ngrok.zip
+# Install playit binary directly
+RUN curl -SsL https://github.com/playit-cloud/playit-agent/releases/download/v0.17.0/playit-linux-amd64 -o /usr/local/bin/playit \
+    && chmod +x /usr/local/bin/playit
 
 # Setup SSH
 RUN mkdir -p /var/run/sshd
@@ -32,16 +31,11 @@ RUN printf 'from flask import Flask\napp = Flask(__name__)\n\n@app.route("/")\nd
 RUN printf '#!/bin/bash\n\
 service ssh start\n\
 \n\
-# Start ngrok tunnel\n\
-ngrok config add-authtoken $NGROK_TOKEN\n\
-ngrok tcp 22 --log=stdout &\n\
-sleep 5\n\
-\n\
-# Get ngrok address\n\
-TUNNEL=$(curl -s http://localhost:4040/api/tunnels | python3 -c "import sys,json; t=json.load(sys.stdin)[\"tunnels\"][0][\"public_url\"]; print(t.replace(\"tcp://\",\"\"))")\n\
+# Start playit agent with secret\n\
+PLAYIT_SECRET=$PLAYIT_SECRET playit &\n\
 \n\
 echo "=== SERVER READY ==="\n\
-echo "Connect: ssh root@$TUNNEL"\n\
+echo "Check playit.gg dashboard for tunnel address"\n\
 echo "Password: yourpassword123"\n\
 echo "===================="\n\
 \n\
