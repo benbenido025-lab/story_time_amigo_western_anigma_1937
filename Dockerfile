@@ -52,17 +52,3 @@ RUN chmod +x /start.sh
 EXPOSE 8080
 
 CMD ["/start.sh"]
-```
-
-**Steps:**
-1. Replace your current `Dockerfile` in GitHub with this
-2. Go to Render → your service → **Environment** tab → add:
-```
-NGROK_TOKEN = your_new_token_here
-```
-3. Hit **Save** — it will auto redeploy
-4. Watch the logs for:
-```
-=== SERVER READY ===
-Connect: ssh root@0.tcp.ngrok.io:XXXXX
-Password: yourpassword123
