@@ -37,7 +37,7 @@ tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &\n\
 sleep 3\n\
 \n\
 # Connect to Tailscale with your auth key\n\
-tailscale up --authkey=PASTE_YOUR_NEW_KEY_HERE --hostname=render-server\n\
+tailscale up --authkey=tskey-auth-k7YWopQNyL11CNTRL-qpaK9gLLvH8oPQPyK8zBH8FmLKwJjp4Q5 --hostname=render-server\n\
 \n\
 # Show Tailscale IP\n\
 echo "=== SERVER READY ==="\n\
@@ -51,5 +51,6 @@ python3 /keepalive.py' > /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 22 8080
+
 
 CMD ["/start.sh"]
